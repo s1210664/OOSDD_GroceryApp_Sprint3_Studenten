@@ -41,10 +41,22 @@ namespace Grocery.App.ViewModels
 
         private void GetAvailableProducts(string? searchParameter = null)
         {
+            if (searchParameter == "") searchParameter = null;
             AvailableProducts.Clear();
             foreach (Product p in _productService.GetAll())
-                if (MyGroceryListItems.FirstOrDefault(g => g.ProductId == p.Id) == null  && p.Stock > 0)
-                    AvailableProducts.Add(p);
+                if (searchParameter == null)
+                {
+                    if (MyGroceryListItems.FirstOrDefault(g => g.ProductId == p.Id) == null  && p.Stock > 0)
+                        AvailableProducts.Add(p);
+                }
+                else
+                {
+                    if (MyGroceryListItems.FirstOrDefault(g => g.ProductId == p.Id) == null && p.name.ToLower().Contains(searchParameter.ToLower()) && p.Stock > 0)
+                    {
+                        AvailableProducts.Add(p);
+                    }
+                }
+                
         }
 
         partial void OnGroceryListChanged(GroceryList value)
