@@ -39,7 +39,7 @@ namespace Grocery.App.ViewModels
             GetAvailableProducts();
         }
 
-        private void GetAvailableProducts()
+        private void GetAvailableProducts(string? searchParameter = null)
         {
             AvailableProducts.Clear();
             foreach (Product p in _productService.GetAll())
@@ -58,6 +58,17 @@ namespace Grocery.App.ViewModels
             Dictionary<string, object> paramater = new() { { nameof(GroceryList), GroceryList } };
             await Shell.Current.GoToAsync($"{nameof(ChangeColorView)}?Name={GroceryList.Name}", true, paramater);
         }
+        
+
+        
+        
+        [RelayCommand]
+        public void SearchItems(string searchParameter)
+        {
+            GetAvailableProducts(searchParameter);
+        }
+        
+        
         [RelayCommand]
         public void AddProduct(Product product)
         {
