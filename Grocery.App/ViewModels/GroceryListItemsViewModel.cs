@@ -108,6 +108,43 @@ namespace Grocery.App.ViewModels
                 await Toast.Make($"Opslaan mislukt: {ex.Message}").Show(cancellationToken);
             }
         }
+        
+        [RelayCommand]
+        public void MinProduct(Product product)
+        {
+            if (product == null) return;
+
+            var groceryListItem = MyGroceryListItems.FirstOrDefault(x => x.ProductId == product.Id);
+            if (groceryListItem == null) return;
+            if (groceryListItem.Amount <= 0) return;
+
+            groceryListItem.Amount--;
+            product.Stock++;
+
+            _productService.Update(product);
+
+            if (groceryListItem.Amount == 0)
+            {
+                MyGroceryListItems.Remove(groceryListItem);
+                
+                if (!AvailableProducts.Contains(product))
+                    AvailableProducts.Add(product);
+            }
+        }
+        
+        [RelayCommand]
+        public void PlusProduct(Product product)
+        {
+            if (product == null || product.Stock <= 0) return;
+
+            var groceryListItem = MyGroceryListItems.FirstOrDefault(x => x.ProductId == product.Id);
+            if (groceryListItem == null) return;
+
+            groceryListItem.Amount++;
+            product.Stock--;
+
+            _productService.Update(product);
+        }
 
     }
 }
