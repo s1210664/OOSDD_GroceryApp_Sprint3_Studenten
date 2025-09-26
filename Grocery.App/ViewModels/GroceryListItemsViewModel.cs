@@ -16,8 +16,8 @@ namespace Grocery.App.ViewModels
         private readonly IProductService _productService;
         private readonly IFileSaverService _fileSaverService;
         
-        public ObservableCollection<GroceryListItem> MyGroceryListItems { get; set; } = [];
-        public ObservableCollection<Product> AvailableProducts { get; set; } = [];
+        public ObservableCollection<GroceryListItem> MyGroceryListItems { get; set; } = new();
+        public ObservableCollection<Product> AvailableProducts { get; set; } = new();
 
         [ObservableProperty]
         GroceryList groceryList = new(0, "None", DateOnly.MinValue, "", 0);
@@ -35,16 +35,24 @@ namespace Grocery.App.ViewModels
         private void Load(int id)
         {
             MyGroceryListItems.Clear();
-            foreach (var item in _groceryListItemsService.GetAllOnGroceryListId(id)) MyGroceryListItems.Add(item);
+            foreach (var item in _groceryListItemsService.GetAllOnGroceryListId(id)) 
+                MyGroceryListItems.Add(item);
+
             GetAvailableProducts();
         }
 
-        private void GetAvailableProducts()
+        private void GetAvailableProducts(string? searchParameter = null)
         {
+            if (string.IsNullOrEmpty(searchParameter)) searchParameter = null;
             AvailableProducts.Clear();
             foreach (Product p in _productService.GetAll())
-                if (MyGroceryListItems.FirstOrDefault(g => g.ProductId == p.Id) == null  && p.Stock > 0)
+            {
+                if (MyGroceryListItems.FirstOrDefault(g => g.ProductId == p.Id) != null) continue;
+                if (p.Stock <= 0) continue;
+
+                if (searchParameter == null || p.name.ToLower().Contains(searchParameter.ToLower()))
                     AvailableProducts.Add(p);
+            }
         }
 
         partial void OnGroceryListChanged(GroceryList value)
@@ -58,6 +66,13 @@ namespace Grocery.App.ViewModels
             Dictionary<string, object> paramater = new() { { nameof(GroceryList), GroceryList } };
             await Shell.Current.GoToAsync($"{nameof(ChangeColorView)}?Name={GroceryList.Name}", true, paramater);
         }
+
+        [RelayCommand]
+        public void SearchItems(string searchParameter)
+        {
+            GetAvailableProducts(searchParameter);
+        }
+
         [RelayCommand]
         public void AddProduct(Product product)
         {
@@ -86,5 +101,41 @@ namespace Grocery.App.ViewModels
             }
         }
 
+        [RelayCommand]
+        public void MinProduct(Product product)
+        {
+            if (product == null) return;
+
+            var groceryListItem = MyGroceryListItems.FirstOrDefault(x => x.ProductId == product.Id);
+            if (groceryListItem == null) return;
+            if (groceryListItem.Amount <= 0) return;
+
+            groceryListItem.Amount--;
+            product.Stock++;
+
+            _productService.Update(product);
+
+            if (groceryListItem.Amount == 0)
+            {
+                MyGroceryListItems.Remove(groceryListItem);
+                
+                if (!AvailableProducts.Contains(product))
+                    AvailableProducts.Add(product);
+            }
+        }
+        
+        [RelayCommand]
+        public void PlusProduct(Product product)
+        {
+            if (product == null || product.Stock <= 0) return;
+
+            var groceryListItem = MyGroceryListItems.FirstOrDefault(x => x.ProductId == product.Id);
+            if (groceryListItem == null) return;
+
+            groceryListItem.Amount++;
+            product.Stock--;
+
+            _productService.Update(product);
+        }
     }
 }
