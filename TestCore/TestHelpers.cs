@@ -29,7 +29,7 @@ namespace TestCore
 
         //Unhappy flow
         [Test]
-        public void TestPasswordHelperReturnsFalse()
+        public void TestPasswordHelperReturnsFalse() // voor nu op isTrue
         {
             Assert.IsTrue(true); //Zelf uitwerken
         }
